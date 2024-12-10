@@ -1,6 +1,6 @@
-# Ceph-Disaster_Recovery
+# Proxmox / PVE ~ Ceph Disaster Recovery - Recovering the monstore from OSDs after recovering managers from complete monitor loss.
 
-We have a refactored and improved script for recovering monitor stores from osds. Maybe we will make more aids soon but for now this is all. 
+We have refactored and improved the usual script for recovering monitor stores from osds. Maybe we will make more aids soon but for now this is all. 
 
 How to:
 
