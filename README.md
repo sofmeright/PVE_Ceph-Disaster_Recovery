@@ -10,9 +10,9 @@ To recover your monmap from osds you will need to form a quorum with managers or
 "Installing":
 1. Transfer both of these scripts to a folder on one of your PVE nodes: 
 
-> [recover_monstore_from_osds-bluestore_runtime.sh](blob:https://github.com/14c81369-09f8-41f1-a849-8f0a84d1c46a)
+> [recover_monstore_from_osds-bluestore_runtime.sh](https://github.com/sofmeright/PVE_Ceph-Disaster_Recovery/blob/main/recover_monstore_from_osds-bluestore_runtime.sh)
 
-> recover_monstore_from_osds-bluestore_scanner.sh
+> [recover_monstore_from_osds-bluestore_scanner.sh](https://github.com/sofmeright/PVE_Ceph-Disaster_Recovery/blob/main/recover_monstore_from_osds-bluestore_scanner.sh)
 
 Read over the scripts. 
 Inspect them carefully. 
