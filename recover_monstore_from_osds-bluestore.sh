@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Having trouble with vars nested into the rsync. I think separate it into a separate file and send it over to execute for physical rebuild..... 
+# Also can perhaps do multithread if do a watch is it done without waiting to complete idk...
+
 # set -x ~ Print shell command before execute it. This feature help programmers to track their shell script.
 # set -e ~ If the return code of one command is not 0 and the caller does not check it, the shell script will exit. This feature make shell script robust.
 set -xe
@@ -26,38 +30,34 @@ function osd_get_block_device() { # syntax pass osd #
         fi
     echo $osd_block_device
 }
-function osd_get_mount_path() { # syntax pass osd #
-    echo /var/lib/ceph/osd/ceph-$1/block
-}
 function osd_mount_bluestore() { # syntax pass osd #
-    if [ $bluestore_flag -ne 1 ]; then
+    if [ $bluestore_flag -eq 1 ]; then
         ceph-bluestore-tool --cluster=ceph prime-osd-dir --dev $(osd_get_block_device $1) --path /var/lib/ceph/osd/ceph-$1
         ln -snf $(osd_get_block_device $1) /var/lib/ceph/osd/ceph-$1/block
         fi
+}
+function mon_rebuild_from_osd() {
+    if [ $bluestore_flag -eq 1 ]; then
+        ceph-objectstore-tool --type bluestore --data-path \$1 --no-mon-config --op update-mon-db --mon-store-path $ms.remote || true
+        else ceph-objectstore-tool --data-path \$1 --no-mon-config --op update-mon-db --mon-store-path $ms.remote || true
+        fi
+}
+function osd_get_mount_path() { # syntax pass osd #
+    echo /var/lib/ceph/osd/ceph-$1/block
 }
 function mgr_get_key() {
     # Temporarily store a copy of the mgr keyring from the remote node to gain a copy of the key.
     scp root@$1:/var/lib/ceph/mgr/ceph-$1/keyring /root/mgr-ceph-$1-keyring
     local file="/root/mgr-ceph-$1-keyring"
-    # Extract the key using awk
-    local key=$(awk -F '=' '/key *=/ {
-        # Trim leading/trailing whitespace from the key value
-        gsub(/^[ \t]+|[ \t]+$/, "", $2);
-        if (length($2) > 0) {
-            print $2;
-            exit;
-        }
-    }' "$file")
-    # Remove the file
+    
+    # Use grep to find the line with the key and then extract the key using awk
+    local key=$(grep -oP 'key\s*=\s*\K[A-Za-z0-9+/=]+' "$file")
+    
+    # Remove the temporary keyring file
     rm "$file"
+    
     # Return the extracted key
     echo "$key"
-}
-function mon_rebuild_from_osd() {
-    if [ $bluestore_flag -ne 1 ]; then
-        ceph-objectstore-tool --type bluestore --data-path \$1 --no-mon-config --op update-mon-db --mon-store-path $ms.remote || true
-        else ceph-objectstore-tool --data-path \$1 --no-mon-config --op update-mon-db --mon-store-path $ms.remote || true
-        fi
 }
 function hosts_get_names() {
     awk '
@@ -99,9 +99,10 @@ function hosts_get_names() {
 }
 # --------------------------------------------------------------------------------------------------------------------------
 
-if [ $hosts_auto_populate -e 1 ]; then
+if [ $hosts_auto_populate -eq 1 ]; then
         hosts=($(hosts_get_names))
         fi
+
 
 # Ensure the folder we use as a target for the monmap rebuild starts empty.
 rm -r $ms || true
@@ -111,12 +112,12 @@ mkdir $ms || true
 # sure to start with clean folders, or the rebuild will fail when starting ceph-mon
 # (update_from_paxos assertion error) (the rm -rf is no mistake here)
 for host in "${hosts[@]}"; do
-    echo $hosts
-    exit
     rsync -avz $ms/. root@$host:$ms.remote
     rm -rf $ms
     ssh root@$host <<EOF
         set -x
+
+        
         for osd in /var/lib/ceph/osd/ceph-*; do
             # We do need the || true here to not crash when ceph tries to recover the osd-{node}-Directory present on some hosts
             osd_mount_bluestore $osd
@@ -140,8 +141,10 @@ ceph-authtool "$KEYRING" -n client.admin \
 # deployed
 
 for host in "${hosts[@]}"; do
-    ceph-authtool "$KEYRING" --add-key '$(mgr_get_key $host)' -n mgr.$host \
-        --cap mon 'allow profile mgr' --cap osd 'allow *' --cap mds 'allow *'
+    # Get the key using the mgr_get_key function and assign it to a variable
+    key=$(mgr_get_key $host) 
+    # Execute ceph-authtool with the key for the remote host
+    ssh root@$host "ceph-authtool '$KEYRING' --add-key '$key' -n mgr.$host --cap mon 'allow profile mgr' --cap osd 'allow *' --cap mds 'allow *'"
     done
 
 # If your monitors' ids are not sorted by ip address, please specify them in order.
@@ -153,7 +156,7 @@ for host in "${hosts[@]}"; do
 # sections named like '[mon.foo]'. don't pass the "--mon-ids" option, if you are
 # using DNS SRV for looking up monitors.
 # This will fail if the provided monitors are not in the ceph.conf or if there is a mismatch in length. SET YOUR OWN monitor IDs here
-ceph-monstore-tool $ms rebuild -- --keyring "$KEYRING" --mon-ids $hosts_get_names
+ceph-monstore-tool $ms rebuild -- --keyring '$KEYRING' --mon-ids $hosts_get_names
 
 # make a backup of the existing store.db just in case!  repeat for all monitors.
 # CAREFUL here: Running the script multiple times will never overwrite the *original* backup! (Cause that's unsafe imho)
