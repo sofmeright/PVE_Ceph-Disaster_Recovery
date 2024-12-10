@@ -11,6 +11,7 @@ set -xe
 # This is meant to be a for dummies rescue script for PVE so it's limited what I am adding to the script here. Other than that, everything else is configurable here afaik.
 
 # CHANGE These!
+monmap_exe=/root/_Server/__SysAdmin_Scripts/Ceph/Disaster-Recovery/recover_monstore_from_osds-bluestore_scanner.sh
 # If all your hosts contain osds no need to define them all. Import them dynamically.
 hosts_auto_populate=1
 # Hosts that provide OSDs - if you don't specify a host here that has OSDs, they will become "Ghost OSDs" in rebuild and data may be lost
@@ -22,29 +23,6 @@ bluestore_flag=1
 # You probably need this mon key path if you are using proxmox
 KEYRING="/etc/pve/priv/ceph.mon.keyring"
 
-# FUNCTION DEFINITIONS ~ Feel free to read to see how I implemented these as you see it below in the main runtime.
-function osd_get_block_device() { # syntax pass osd #
-    osd_n_info=$(ceph-volume lvm list $1)
-    if [[ "$osd_n_info" =~ /dev/ceph[0-9a-z-]+/osd-block-[0-9a-z-]+ ]]; then
-        osd_block_device=${BASH_REMATCH[0]}  # Outputs "bcd"
-        fi
-    echo $osd_block_device
-}
-function osd_mount_bluestore() { # syntax pass osd #
-    if [ $bluestore_flag -eq 1 ]; then
-        ceph-bluestore-tool --cluster=ceph prime-osd-dir --dev $(osd_get_block_device $1) --path /var/lib/ceph/osd/ceph-$1
-        ln -snf $(osd_get_block_device $1) /var/lib/ceph/osd/ceph-$1/block
-        fi
-}
-function mon_rebuild_from_osd() {
-    if [ $bluestore_flag -eq 1 ]; then
-        ceph-objectstore-tool --type bluestore --data-path \$1 --no-mon-config --op update-mon-db --mon-store-path $ms.remote || true
-        else ceph-objectstore-tool --data-path \$1 --no-mon-config --op update-mon-db --mon-store-path $ms.remote || true
-        fi
-}
-function osd_get_mount_path() { # syntax pass osd #
-    echo /var/lib/ceph/osd/ceph-$1/block
-}
 function mgr_get_key() {
     # Temporarily store a copy of the mgr keyring from the remote node to gain a copy of the key.
     scp root@$1:/var/lib/ceph/mgr/ceph-$1/keyring /root/mgr-ceph-$1-keyring
@@ -104,26 +82,24 @@ if [ $hosts_auto_populate -eq 1 ]; then
         fi
 
 
-# Ensure the folder we use as a target for the monmap rebuild starts empty.
-rm -r $ms || true
+# Ensure the folders we use as targets for the monmap rebuild starts empty.
+
+for host in "${hosts[@]}"; do
+    ssh root@$host "rm -r $ms || true"
+    ssh root@$host "rm -r $ms.remote || true"
+    done
 mkdir $ms || true
 
 # collect the cluster map from stopped OSDs - basically, this daisy-chains the gathering. Make
 # sure to start with clean folders, or the rebuild will fail when starting ceph-mon
 # (update_from_paxos assertion error) (the rm -rf is no mistake here)
 for host in "${hosts[@]}"; do
-    rsync -avz $ms/. root@$host:$ms.remote
+    rsync -avz --mkpath $ms/. root@$host:$ms.remote
     rm -rf $ms
-    ssh root@$host <<EOF
-        set -x
+    # Transfer and launch the osd scanner on each node.
+    rsync -avz --mkpath $monmap_exe root@$host:$monmap_exe
+    ssh root@$host "bash $monmap_exe"
 
-        
-        for osd in /var/lib/ceph/osd/ceph-*; do
-            # We do need the || true here to not crash when ceph tries to recover the osd-{node}-Directory present on some hosts
-            osd_mount_bluestore $osd
-            mon_rebuild_from_osd $osd
-            done
-EOF
     rsync -avz --remove-source-files root@$host:$ms.remote/. $ms
     done
 
