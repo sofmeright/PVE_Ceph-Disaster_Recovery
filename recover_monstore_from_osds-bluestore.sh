@@ -36,6 +36,10 @@ function mon_rebuild_from_osd() {
 }
 function hosts_get_names() {
     awk '
+    BEGIN {
+        line = "";  # Initialize an empty string to store names
+    }
+
     # Flag to track when inside a node block
     /node {/ {
         in_node = 1;  # Set the flag when "node {" is found
@@ -45,9 +49,14 @@ function hosts_get_names() {
     in_node && /name:/ {
         # Split the line on colon to get the name
         split($0, parts, ":");
-        # Trim any leading/trailing whitespace and print the name
+        # Trim any leading/trailing whitespace
         gsub(/^[ \t]+|[ \t]+$/, "", parts[2]);
-        print parts[2];
+        # Append the name to the line string, separated by a space
+        if (line == "") {
+            line = parts[2];
+        } else {
+            line = line " " parts[2];
+        }
     }
 
     # End of a node block
@@ -56,7 +65,12 @@ function hosts_get_names() {
             in_node = 0;  # Reset the flag
         }
     }
-' "$1"
+
+    # Print the result at the end
+    END {
+        print line;
+    }
+' "/etc/pve/corosync.conf"
 }
 # --------------------------------------------------------------------------------------------------------------------------
 
@@ -70,4 +84,4 @@ function hosts_get_names() {
 osd_get_block_device 0
 osd_get_mount_path 0
 osd_mount_bluestore 0
-hosts_get_names /etc/pve/corosync.conf
+hosts_get_names
