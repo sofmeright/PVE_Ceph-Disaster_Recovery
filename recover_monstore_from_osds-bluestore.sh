@@ -8,7 +8,7 @@ set -xe
 
 # CHANGE These!
 # If all your hosts contain osds no need to define them all. Import them dynamically.
-hosts_auto_populate=0
+hosts_auto_populate=1
 # Hosts that provide OSDs - if you don't specify a host here that has OSDs, they will become "Ghost OSDs" in rebuild and data may be lost
 hosts=( "Avocado" "Bamboo" "Cosmos" )
 # Your rebuild target path. Make sure it's large enough and empty (couple of GB for a big cluster, not the sum of OSD size)
@@ -99,8 +99,8 @@ function hosts_get_names() {
 }
 # --------------------------------------------------------------------------------------------------------------------------
 
-if [ $hosts_auto_populate -ne 1 ]; then
-        hosts=$hosts_get_names
+if [ $hosts_auto_populate -e 1 ]; then
+        hosts=($(hosts_get_names))
         fi
 
 # Ensure the folder we use as a target for the monmap rebuild starts empty.
@@ -111,6 +111,8 @@ mkdir $ms || true
 # sure to start with clean folders, or the rebuild will fail when starting ceph-mon
 # (update_from_paxos assertion error) (the rm -rf is no mistake here)
 for host in "${hosts[@]}"; do
+    echo $hosts
+    exit
     rsync -avz $ms/. root@$host:$ms.remote
     rm -rf $ms
     ssh root@$host <<EOF
@@ -120,7 +122,7 @@ for host in "${hosts[@]}"; do
             osd_mount_bluestore $osd
             mon_rebuild_from_osd $osd
             done
-        EOF
+EOF
     rsync -avz --remove-source-files root@$host:$ms.remote/. $ms
     done
 
