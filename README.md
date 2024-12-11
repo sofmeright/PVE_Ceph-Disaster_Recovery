@@ -40,6 +40,7 @@ This is such a helpful manual! (A lot of the topis useful!): https://docs.redhat
 Write up I sourced most of this script from: https://forum.proxmox.com/threads/recover-ceph-from-osds-only.113699/   
 
 Note:
+
 Due to limitations in the functionality of bash I was unable to keep this down to a single script while maintaining the dynamic additions I threw in the mix.
 In executing the scripts the many variables and functions I created did not function as expected. However with debug I discovered everything works when packaged in two scripts. 
 If you can compact this into a single script while keeping the process completely dynamic, please let me know!
