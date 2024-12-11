@@ -144,6 +144,6 @@ for host in "${hosts[@]}"; do
             ssh root@$host "mv /var/lib/ceph/mon/ceph-$host/store.db /var/lib/ceph/mon/ceph-$host/store.db.bak"
         fi
         # move rebuild store.db into place.  repeat for all monitors.
-        rsync -av $ms/store.db root@$host:/var/lib/ceph/mon/ceph-$host/store.db
+        rsync -av $ms/store.db/ root@$host:/var/lib/ceph/mon/ceph-$host/store.db/
         ssh root@$host "chown -R ceph:ceph /var/lib/ceph/mon/ceph-$host/store.db"
     done
