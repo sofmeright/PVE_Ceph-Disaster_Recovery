@@ -85,8 +85,8 @@ if [ $hosts_auto_populate -eq 1 ]; then
 # Ensure the folders we use as targets for the monmap rebuild starts empty.
 
 for host in "${hosts[@]}"; do
-    ssh root@$host "rm -r $ms || true"
-    ssh root@$host "rm -r $ms.remote || true"
+    ssh root@$host "rm -rf $ms || true"
+    ssh root@$host "rm -rf $ms.remote || true"
     done
 mkdir $ms || true
 
