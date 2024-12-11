@@ -27,7 +27,7 @@ If you feel confident:
 
 > By default host names are returned automatically, if you only have certain hosts with OSDs then you will need to set the flag "hosts_auto_populate" to 0 and update your list of hosts underneath accordingly.
 
-> Please also observe that there are a few other variables for you toggle, such as you can indicate if you are using bluestore or not. 
+> Please also observe that there are a few other variables for you to toggle, such as you can indicate if you are using bluestore or not. 
 
 > There are paths defined that can be changed in the lower functions in the "_scanner.sh" say if you are not using PVE you may need to make some adjustments, most of the things one might change are again... declared at the top of each file.
 
