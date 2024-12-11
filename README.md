@@ -35,6 +35,7 @@ One last time: **Make sure the variable that defines the location of the "_scann
 I expect as a Ceph user you would know you need to chmod +x both files if they dont execute.** 
 
 Credits:
+
 This is such a helpful manual! (A lot of the topis useful!): https://docs.redhat.com/en/documentation/red_hat_ceph_storage/3/pdf/troubleshooting_guide/Red_Hat_Ceph_Storage-3-Troubleshooting_Guide-en-US.pdf  
 Write up I sourced most of this script from: https://forum.proxmox.com/threads/recover-ceph-from-osds-only.113699/   
 
