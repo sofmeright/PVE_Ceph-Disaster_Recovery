@@ -23,7 +23,9 @@ I simply set out to make this process quite a bit more dynamic and with the extr
 
 If you feel confident:
 
-1. Simply run "bash recover_monstore_from_osds-bluestore_runtime.sh" after ensuring at least the variable that defines the location of the "_scanner.sh". 
+1. Simply run "bash recover_monstore_from_osds-bluestore_runtime.sh" after ensuring at least the variable that defines the location of the "_scanner.sh".
+
+> By default host names are returned automatically, if you only have certain hosts with OSDs then you will need to set the flag "hosts_auto_populate" to 0 and update your list of hosts underneath accordingly.
 
 > Please also observe that there are a few other variables for you toggle, such as you can indicate if you are using bluestore or not. 
 
