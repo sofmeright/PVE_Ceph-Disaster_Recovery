@@ -81,9 +81,7 @@ if [ $hosts_auto_populate -eq 1 ]; then
         hosts=($(hosts_get_names))
         fi
 
-
 # Ensure the folders we use as targets for the monmap rebuild starts empty.
-
 for host in "${hosts[@]}"; do
     ssh root@$host "rm -rf $ms || true"
     ssh root@$host "rm -rf $ms.remote || true"
@@ -120,7 +118,7 @@ for host in "${hosts[@]}"; do
     # Get the key using the mgr_get_key function and assign it to a variable
     key=$(mgr_get_key $host) 
     # Execute ceph-authtool with the key for the remote host
-    ssh root@$host "ceph-authtool '$KEYRING' --add-key '$key' -n mgr.$host --cap mon 'allow profile mgr' --cap osd 'allow *' --cap mds 'allow *'"
+    ceph-authtool "$KEYRING" --add-key "$key" -n mgr.$host --cap mon 'allow profile mgr' --cap osd 'allow *' --cap mds 'allow *'
     done
 
 # If your monitors' ids are not sorted by ip address, please specify them in order.
@@ -132,7 +130,7 @@ for host in "${hosts[@]}"; do
 # sections named like '[mon.foo]'. don't pass the "--mon-ids" option, if you are
 # using DNS SRV for looking up monitors.
 # This will fail if the provided monitors are not in the ceph.conf or if there is a mismatch in length. SET YOUR OWN monitor IDs here
-ceph-monstore-tool $ms rebuild -- --keyring '$KEYRING' --mon-ids $hosts_get_names
+ceph-monstore-tool $ms rebuild -- --keyring $KEYRING --mon-ids ${hosts[@]}
 
 # make a backup of the existing store.db just in case!  repeat for all monitors.
 # CAREFUL here: Running the script multiple times will never overwrite the *original* backup! (Cause that's unsafe imho)
@@ -142,7 +140,7 @@ for host in "${hosts[@]}"; do
     if ssh "root"@"$host" "[ ! -e /var/lib/ceph/mon/ceph-$host/store.db.original ]"; then
         ssh root@$host "mv /var/lib/ceph/mon/ceph-$host/store.db /var/lib/ceph/mon/ceph-$host/store.db.original"
         else 
-            ssh root@$host "rm -r /var/lib/ceph/mon/ceph-$host/store.db.bak
+            ssh root@$host "rm -r /var/lib/ceph/mon/ceph-$host/store.db.bak || true"
             ssh root@$host "mv /var/lib/ceph/mon/ceph-$host/store.db /var/lib/ceph/mon/ceph-$host/store.db.bak"
         fi
         # move rebuild store.db into place.  repeat for all monitors.
