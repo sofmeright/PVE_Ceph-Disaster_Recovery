@@ -11,7 +11,7 @@ set -xe
 # This is meant to be a for dummies rescue script for PVE so it's limited what I am adding to the script here. Other than that, everything else is configurable here afaik.
 
 # CHANGE These!
-monmap_exe=/root/_Server/__SysAdmin_Scripts/Ceph/Disaster-Recovery/recover_monstore_from_osds-bluestore_scanner.sh
+monmap_exe=/root/_Server/__SysAdmin_Scripts/Ceph/Disaster-Recovery/extract_monmap_from_osds-scanner.sh
 # If all your hosts contain osds no need to define them all. Import them dynamically.
 hosts_auto_populate=1
 # Hosts that provide OSDs - if you don't specify a host here that has OSDs, they will become "Ghost OSDs" in rebuild and data may be lost
