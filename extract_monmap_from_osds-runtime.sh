@@ -1,28 +1,24 @@
 #!/bin/bash
-
-# Having trouble with vars nested into the rsync. I think separate it into a separate file and send it over to execute for physical rebuild..... 
-# Also can perhaps do multithread if do a watch is it done without waiting to complete idk...
-
-# set -x ~ Print shell command before execute it. This feature help programmers to track their shell script.
-# set -e ~ If the return code of one command is not 0 and the caller does not check it, the shell script will exit. This feature make shell script robust.
-set -xe
-
-# Notes: This may work for other OS than PVE, you may want to tweak the mgr get key function if the mgr key paths will be different in that case. There may be other paths called dynamically in the function calls. 
-# This is meant to be a for dummies rescue script for PVE so it's limited what I am adding to the script here. Other than that, everything else is configurable here afaik.
-
-# CHANGE These!
-monmap_exe=/root/_Server/__SysAdmin_Scripts/Ceph/Disaster-Recovery/extract_monmap_from_osds-runtime.sh
-# If all your hosts contain osds no need to define them all. Import them dynamically.
+# -----------------------------------------------------------------------------------
+# Notes: This may work for other OS than PVE; it is configured for such, yet you are welcome to tweak it to you needs. 
+# --------------------- Variables you might change ? --------------------------------
+monmap_exe=/root/_Server/__SysAdmin_Scripts/Ceph/Disaster-Recovery/extract_monmap_from_osds-scanner.sh
+# Set the script to populate the list of hosts dynamically? You can set this to 0 or 1 ~ true/false.
 hosts_auto_populate=true
 # Hosts that provide OSDs - if you don't specify a host here that has OSDs, they will become "Ghost OSDs" in rebuild and data may be lost
 hosts=( "Avocado" "Bamboo" "Cosmos" )
 # Your rebuild target path. Make sure it's large enough and *empty* (all contents will be deleted) (couple of GB for a big cluster, not the sum of OSD size)
 ms=/root/mon-store
-# set to 1 if the osds are bluestore otherwise set to 0.
-bluestore_flag=1
 # You probably need this mon key path if you are using proxmox
 KEYRING="/etc/pve/priv/ceph.mon.keyring"
-
+# -----------------------------------------------------------------------------------
+# I wouldn't change anything past this line unless you are careful and know what you are doing.
+# -----------------------------------------------------------------------------------
+# set -x ~ Print shell command before execute it. This feature help programmers to track their shell script.
+# set -e ~ If the return code of one command is not 0 and the caller does not check it, the shell script will exit. This feature make shell script robust.
+set -xe
+# -----------------------------------------------------------------------------------
+# FUNCTION DEFINITIONS ~ Feel free to read to see how I implemented these as you see it below in the main runtime.
 function mgr_get_key() {
     # Temporarily store a copy of the mgr keyring from the remote node to gain a copy of the key.
     scp root@$1:/var/lib/ceph/mgr/ceph-$1/keyring /root/mgr-ceph-$1-keyring
@@ -84,17 +80,14 @@ function hosts_get_names() {
             return 1
         fi
 }
-# --------------------------------------------------------------------------------------------------------------------------
-
+# --------------------- This is the main runtime below ---------------------
 hosts=($(hosts_get_names))
-
 # Ensure the folders we use as targets for the monmap rebuild starts empty.
 for host in "${hosts[@]}"; do
     ssh root@$host "rm -rf $ms || true"
     ssh root@$host "rm -rf $ms.remote || true"
     done
 mkdir $ms || true
-
 # collect the cluster map from stopped OSDs - basically, this daisy-chains the gathering. Make
 # sure to start with clean folders, or the rebuild will fail when starting ceph-mon
 # (update_from_paxos assertion error) (the rm -rf is no mistake here)
@@ -104,7 +97,7 @@ for host in "${hosts[@]}"; do
     # Remove the local copy of the tmp monmap keeping things clean.
     rm -rf $ms
     # Attempt to activate all the osds using ceph tools.
-    ceph-volume lvm activate --all
+    ssh root@$host "ceph-volume lvm activate --all"
     # For safety's sake: Stops all ceph services to prevent conflicts during read.
     ssh root@$host "systemctl stop ceph.target"
     ssh root@$host "systemctl stop ceph-mgr@$host"
@@ -116,7 +109,6 @@ for host in "${hosts[@]}"; do
     # Pull the tmp monmap from the remote host so it can be added to on the ? next cycle.
     rsync -avz --remove-source-files root@$host:$ms.remote/. $ms
     done
-
 # rebuild the monitor store from the collected map, if the cluster does not
 # use cephx authentication, we can skip the following steps to update the
 # keyring with the caps, and there is no need to pass the "--keyring" option.
@@ -129,14 +121,12 @@ ceph-authtool "$KEYRING" -n client.admin \
 # for mgr.x is added, you can find the encoded key in
 # /etc/ceph/${cluster}.${mgr_name}.keyring on the machine where ceph-mgr is
 # deployed
-
 for host in "${hosts[@]}"; do
     # Get the key using the mgr_get_key function and assign it to a variable
     key=$(mgr_get_key $host) 
     # Execute ceph-authtool with the key for the remote host
     ceph-authtool "$KEYRING" --add-key "$key" -n mgr.$host --cap mon 'allow profile mgr' --cap osd 'allow *' --cap mds 'allow *'
     done
-
 # If your monitors' ids are not sorted by ip address, please specify them in order.
 # For example. if mon 'a' is 10.0.0.3, mon 'b' is 10.0.0.2, and mon 'c' is  10.0.0.4,
 # please passing "--mon-ids b a c".
@@ -147,10 +137,8 @@ for host in "${hosts[@]}"; do
 # using DNS SRV for looking up monitors.
 # This will fail if the provided monitors are not in the ceph.conf or if there is a mismatch in length. SET YOUR OWN monitor IDs here
 ceph-monstore-tool $ms rebuild -- --keyring $KEYRING --mon-ids ${hosts[@]}
-
 # make a backup of the existing store.db just in case!  repeat for all monitors.
 # CAREFUL here: Running the script multiple times will never overwrite the *original* backup! (Cause that's unsafe imho)
-
 for host in "${hosts[@]}"; do
     # if there is not an original backup db in the folder back it up. (On all hosts)
     if ssh "root"@"$host" "[ ! -e /var/lib/ceph/mon/ceph-$host/store.db.original ]"; then
