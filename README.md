@@ -34,6 +34,9 @@ If you feel confident:
 One last time: **Make sure the variable that defines the location of the "_scanner.sh" is set properly in the "_runtime.sh". Maybe I should make that an argument that you pass into the runtime.. Idk. But for now thats how you use this! Unless you edit it. 
 I expect as a Ceph user you would know you need to chmod +x both files if they dont execute.** 
 
+I have felt that my monitor store had corruption is why I could not proceed from here... I found an additional guide. Will be adapting soon to see if this is what is missed currently.
+https://docs.redhat.com/en/documentation/red_hat_ceph_storage/8/html/troubleshooting_guide/troubleshooting-ceph-monitors#recovering-the-ceph-monitor-store-when-using-bluestore_diag
+
 Credits:
 
 This is such a helpful manual! (A lot of the topis useful!): https://docs.redhat.com/en/documentation/red_hat_ceph_storage/3/pdf/troubleshooting_guide/Red_Hat_Ceph_Storage-3-Troubleshooting_Guide-en-US.pdf  
