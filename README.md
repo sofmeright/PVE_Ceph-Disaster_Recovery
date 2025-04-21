@@ -34,7 +34,7 @@ If you feel confident:
 One last time: **Make sure the variable that defines the location of the "_scanner.sh" is set properly in the "_runtime.sh". Maybe I should make that an argument that you pass into the runtime.. Idk. But for now thats how you use this! Unless you edit it. 
 I expect as a Ceph user you would know you need to chmod +x both files if they dont execute.** 
 
-I have felt that my monitor store had corruption is why I could not proceed from here... I found an additional guide. Will be adapting soon to see if this is what is missed currently.
+I found an additional guide. This update may be relevant to the restore process at some point just an FYI. In my case my issue stopping my OSDs from peering was that I was attempting to do dual stack ipv4 and ipv6 for the public and private subnet ip ranges and that was not supported. Just another FYI.
 https://docs.redhat.com/en/documentation/red_hat_ceph_storage/8/html/troubleshooting_guide/troubleshooting-ceph-monitors#recovering-the-ceph-monitor-store-when-using-bluestore_diag
 
 Credits:
