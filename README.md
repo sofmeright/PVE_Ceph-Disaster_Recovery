@@ -12,6 +12,59 @@ This is a refactored and improved script-based process to recover Ceph monitor s
 - You must have a quorum with managers (mgrs) for the recovery to work.
 - Ceph’s networking setup (IPv4/IPv6, dual-stack, routing) can cause OSDs to fail peering if misconfigured.
 
+## Before You Begin
+Recovering a Ceph monitor store from OSDs is a delicate process — **get these steps wrong, and you risk permanent data loss.** This section outlines what must be in place, when recovery is doomed from the start, and the checks you should run before executing the scripts.
+
+## Prerequisites for Recovery
+You’ll need the following intact and accessible on at least one node in your cluster:
+
+### 🔑 Critical Keyrings
+- /var/lib/ceph/mgr/<cluster>-<host>/keyring
+- /var/lib/ceph/mon/<cluster>-<host>/keyring
+- /etc/pve/priv/ceph.client.admin.keyring
+- /etc/pve/priv/ceph.mon.keyring
+- /etc/pve/priv/ceph.client.bootstrap-osd.keyring
+
+### 📄 Configuration Files
+- /etc/ceph/ceph.conf (cluster config)
+- /etc/pve/ceph.conf (Proxmox cluster-synced config)
+- /var/lib/ceph (daemon state and store data)
+
+### 💾 OSD Requirements
+- At least one full replica of the data must exist — this may be on a single OSD or spread across multiple OSDs.
+- All OSDs holding the surviving replica(s) must have intact metadata and object stores.
+- The OSD data (BlueStore or FileStore) must be intact and accessible for scanning.
+
+### Recovery Will Fail If…
+- All OSDs are missing or corrupted — no intact PG replicas = no recovery.
+- Keyrings are gone — without them, daemons and clients can’t authenticate.
+- Configuration files are missing — cluster topology and FSID will be unknown.
+- Networking is broken — incorrect subnets, firewall rules, or unsupported IPv4/IPv6 dual-stack will block peering.
+- Cluster FSID mismatch — recovered monitors won’t talk to your OSDs.
+- Severe clock skew — quorum will never form if node clocks are too far apart.
+
+### Pre-flight Checklist
+
+Answer YES to each before proceeding:
+
+✅ At least one intact OSD passes object store inspection.
+
+✅ All critical keyrings listed above are present.
+
+✅ /etc/ceph/ceph.conf and /etc/pve/ceph.conf exist.
+
+✅ Nodes can communicate over Ceph’s public and cluster networks.
+
+✅ Firewalls allow Ceph ports (TCP 3300, 6789 for mons; 6800–7300 for OSDs).
+
+✅ Cluster FSID is known and matches across surviving components.
+
+✅ NTP or chrony is running; clocks are in sync.
+
+✅ A safe backup directory is ready for configs and keyrings.
+
+💡 Pro tip: The rsync backup steps in the script will create a full copy of critical configs and keyrings. Run this first and confirm backups before touching live data.
+
 ## Setup and Usage
 ### Scripts
 You will need two scripts:
