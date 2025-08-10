@@ -1,52 +1,68 @@
-# Proxmox / PVE ~ Ceph Disaster Recovery - Recovering the monstore from OSDs after complete monitor loss.
+# Proxmox / PVE Ceph Disaster Recovery
+Recovering the Monitor Store from OSDs after Complete Monitor Loss
 
-We have refactored and improved the usual script for recovering monitor stores from osds.
+## Overview
+This is a refactored and improved script-based process to recover Ceph monitor stores (monstore) from OSDs when your cluster has lost all monitors. This procedure helps restore your monitor quorum and cluster health without full data loss.
+> This is not a magic wand or a simple fix. These scripts are adaptations of existing recovery methods found in Proxmox forums, IBM, and Red Hat Ceph documentation. They have been enhanced to provide extra guidance and dynamic handling because disaster recovery is a delicate process — one where mistakes can be costly. Use with care and make sure you fully understand each step before proceeding.
 
-How to:
+## Important Warnings
+- DO NOT run any purge scripts unless you absolutely want to destroy all data and start over.
+- Review all scripts carefully before running, especially if you have any custom setups.
+- This recovery is sensitive — mistakes can cause irreversible damage.
+- You must have a quorum with managers (mgrs) for the recovery to work.
+- Ceph’s networking setup (IPv4/IPv6, dual-stack, routing) can cause OSDs to fail peering if misconfigured.
 
-To recover your monmap from osds you will need to form a quorum with managers or it will not work...
+## Setup and Usage
+### Scripts
+You will need two scripts:
+- `recover_monstore_from_osds-bluestore_runtime.sh`
+- `recover_monstore_from_osds-bluestore_scanner.sh`
 
-> Whatever you do, obviously don't run the purge script I included unless you absolutely are certain that you want to destroy all your data and start over from scratch. And the other files should be generally safe but it wouldn't be a bad idea to look them over as well. Sorry this is all I came back with for an update. I was thinking about this, I encountered a potential client who is in a disaster recovery situation and I thought I should commit the scripts I used for staging important files as well as printing useful information to the terminal.
-
-"Installing":
-1. Transfer both of these scripts to a folder on one of your PVE nodes: 
-
-> [recover_monstore_from_osds-bluestore_runtime.sh](https://github.com/sofmeright/PVE_Ceph-Disaster_Recovery/blob/main/recover_monstore_from_osds-bluestore_runtime.sh)
-
-> [recover_monstore_from_osds-bluestore_scanner.sh](https://github.com/sofmeright/PVE_Ceph-Disaster_Recovery/blob/main/recover_monstore_from_osds-bluestore_scanner.sh)
-
-Read over the scripts. 
-Inspect them carefully. 
-Should be functionally identical to other ones that are floating around. 
-
-I simply set out to make this process quite a bit more dynamic and with the extra handholding, 
-... cause disaster recovery is a process where we really don't want to make any mistakes. 
-
-If you feel confident:
-
-1. Simply run "bash recover_monstore_from_osds-bluestore_runtime.sh" after ensuring at least the variable that defines the location of the "_scanner.sh".
-
-> By default host names are returned automatically, if you only have certain hosts with OSDs then you will need to set the flag "hosts_auto_populate" to 0 and update your list of hosts underneath accordingly.
-
-> Please also observe that there are a few other variables for you to toggle, such as you can indicate if you are using bluestore or not. 
-
-> There are paths defined that can be changed in the lower functions in the "_scanner.sh" say if you are not using PVE you may need to make some adjustments, most of the things one might change are again... declared at the top of each file.
-
-One last time: **Make sure the variable that defines the location of the "_scanner.sh" is set properly in the "_runtime.sh". Maybe I should make that an argument that you pass into the runtime.. Idk. But for now thats how you use this! Unless you edit it. 
-I expect as a Ceph user you would know you need to chmod +x both files if they dont execute.** 
-
-I found an additional guide. This update may be relevant to the restore process at some point just an FYI. In my case my issue stopping my OSDs from peering was that I was attempting to do dual stack ipv4 and ipv6 for the public and private subnet ip ranges and that was not supported. Just another FYI.
+### Installation
+1. Transfer both scripts to a folder on one of your Proxmox VE nodes.
+2. Inspect both scripts carefully; they should be functionally similar to common scripts floating around.
+3. Make both scripts executable:
+```bash
+chmod +x recover_monstore_from_osds-bluestore_runtime.sh
+chmod +x recover_monstore_from_osds-bluestore_scanner.sh
+```
+### Configuration
+- Ensure the _runtime.sh script correctly references the location of the _scanner.sh script.
+- By default, hostnames with OSDs are auto-detected.
+  - If you want to specify hosts manually, set hosts_auto_populate=0 in the runtime script and list your hosts below.
+- You can toggle variables like whether you’re using Bluestore or Filestore.
+- Paths and other environment-specific settings are defined near the top of each script — adjust as needed, especially if not using PVE.
+### Running
+Once configured:
+```bash
+bash recover_monstore_from_osds-bluestore_runtime.sh
+```
+## Additional Notes & Troubleshooting
+- I found an additional helpful Red Hat troubleshooting guide that may be useful:
 https://docs.redhat.com/en/documentation/red_hat_ceph_storage/8/html/troubleshooting_guide/troubleshooting-ceph-monitors#recovering-the-ceph-monitor-store-when-using-bluestore_diag
+- My own recovery attempts failed initially due to dual-stack IPv4/IPv6 configuration issues on public and private subnets. Ceph does not fully support mixed IPv4/IPv6 addressing for cluster communication, which blocked OSD peering.
+- After switching to consistent IPv6 subnets and configuring firewall rules, OSDs successfully peered.
+- Be cautious of networking and firewall setups — any mismatch or blocked routes can cause Ceph to fail. (Enable ipv4/ipv6 forwarding if using frr/ospf)
+- This process is meant for advanced users who understand Ceph internals and networking.
 
-Credits:
+## Why Two Scripts?
+- Bash limitations prevented packaging all logic into a single script while keeping the process fully dynamic.
+- Splitting into _runtime.sh and _scanner.sh allows for modular functions and dynamic variable handling.
+- If you can consolidate into one script without losing functionality, please share your approach!
 
-This is such a helpful manual! (A lot of the topis useful!): https://docs.redhat.com/en/documentation/red_hat_ceph_storage/3/pdf/troubleshooting_guide/Red_Hat_Ceph_Storage-3-Troubleshooting_Guide-en-US.pdf  
-Write up I sourced most of this script from: https://forum.proxmox.com/threads/recover-ceph-from-osds-only.113699/  
+## Credits & References
+- Primary source and inspiration: https://forum.proxmox.com/threads/recover-ceph-from-osds-only.113699/
+- Helpful manual: https://docs.redhat.com/en/documentation/red_hat_ceph_storage/3/pdf/troubleshooting_guide/Red_Hat_Ceph_Storage-3-Troubleshooting_Guide-en-US.pdf
 
-Note:
+## Final Thoughts
+Recovering a Ceph cluster after total monitor loss is challenging and requires careful planning. This script set aims to guide you through a safer, more dynamic recovery process. Please review everything thoroughly and only proceed if you are confident in the steps.
+Good luck, and I hope this helps anyone facing disaster recovery situations with Ceph on Proxmox!
 
-Due to limitations in the functionality of bash I was unable to keep this down to a single script while maintaining the dynamic additions I threw in the mix.
-In executing the scripts the many variables and functions I created did not function as expected. However with debug I discovered everything works when packaged in two scripts. 
-If you can compact this into a single script while keeping the process completely dynamic, please let me know!
-
-> I found out after a few months of attempting to fix it and no test environment that the problem in my recovery procedure was trying to force dual stack IPV4 and IPV6 for the cluster addresses. It was always strange to me how close I seemed to have got with a few times PVE showed that I had a good database mons/man online after doing the monstore process via this script but the osds would not come up. Eventually I got tired of everything being down and so, I committed to dealing with 100% loss of all application data. Yet, I still couldn't use the disks after I wiped them to start over. Well I found out, all along when I had changed my public ip addresses what Ceph was livid about wasnt so much the change of Ip but that I used ipv4 public addresses and ipv6 private ones via frr ospfv6. Alternatively now both nets are ipv6 with two different subnets and i just have to have ipv6 setup and firewall rules to the servers to talk to ceph rbd from my client machine. Please if you get to this point be sure what you are doing as ceph is very resiliant but there are many ways to stop it in its tracks. ipv4/ipv6 forwarding if you have multiple hops to the destination (ospf) theres a mix of things that could make it a very bad day.. ... Don't worry about my dillema I have recovered quite a bit from my NAS atm I just didn't have VM or db backups etc before so it has been a headache getting back to where I started with my cluster setup started back from scratch with only the knowledge to jumpstart me. Hopefully this update helps someone be it the day someone with data loss woes and not corporate wallet and stumbles accross this script!
+## Disclaimer
+> The scripts and guidance provided here ("Software") are offered as-is, without any warranties, express or implied. Use at your own risk.
+The author makes no guarantees regarding the functionality, reliability, compatibility, or sanity of the Software. It is not responsible for any data loss, system instability, spontaneous server combustions, or black holes that may or may not open in your data center.
+Should running these scripts cause your cat to develop a sudden obsession with the monitor LEDs, your coffee machine to stop working, or your neighbor to question your life choices — well, that’s purely coincidental and definitely not the author’s fault.
+If, during the recovery process, you find yourself talking to your servers, singing lullabies to OSDs, or considering a career as a circus performer, remember: you agreed to this adventure willingly.
+Finally, the author accepts no liability for any missed gaming sessions, forgotten birthdays, or weird dreams involving Ceph daemons dancing in a disco — those are all on you.
+Huge thanks and eternal respect go to the Ceph community, Proxmox developers, and all open source heroes who made any of this possible.
+Now go forth, recover bravely, and may your monitors never lose quorum again.
