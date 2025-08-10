@@ -36,7 +36,7 @@ You’ll need the following intact and accessible on at least one node in your c
 - The OSD data (BlueStore or FileStore) must be intact and accessible for scanning.
 
 ### Recovery Will Fail If…
-- All OSDs are missing or corrupted — no intact PG replicas = no recovery.
+- All OSDs are missing or corrupted — no intact PG replicas on any OSDs = no recovery.
 - Keyrings are gone — without them, daemons and clients can’t authenticate.
 - Configuration files are missing — cluster topology and FSID will be unknown.
 - Networking is broken — incorrect subnets, firewall rules, or unsupported IPv4/IPv6 dual-stack will block peering.
