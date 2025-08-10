@@ -1,11 +1,12 @@
 # Proxmox / PVE ~ Ceph Disaster Recovery - Recovering the monstore from OSDs after complete monitor loss.
 
-We have refactored and improved the usual script for recovering monitor stores from osds. Maybe we will make more aids soon but for now this is all. 
+We have refactored and improved the usual script for recovering monitor stores from osds.
 
 How to:
 
 To recover your monmap from osds you will need to form a quorum with managers or it will not work...
 
+> Whatever you do, obviously don't run the purge script I included unless you absolutely are certain that you want to destroy all your data and start over from scratch. And the other files should be generally safe but it wouldn't be a bad idea to look them over as well. Sorry this is all I came back with for an update. I was thinking about this, I encountered a potential client who is in a disaster recovery situation and I thought I should commit the scripts I used for staging important files as well as printing useful information to the terminal.
 
 "Installing":
 1. Transfer both of these scripts to a folder on one of your PVE nodes: 
