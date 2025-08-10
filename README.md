@@ -65,6 +65,8 @@ Answer YES to each before proceeding:
 
 💡 Pro tip: The rsync backup steps in the script will create a full copy of critical configs and keyrings. Run this first and confirm backups before touching live data.
 
+> Note: Failing one or more of the above checks does not guarantee your data is unrecoverable. It simply means the recovery process is out of scope for this repository. At that point, recovery would require a Ceph data recovery specialist who can extract data directly from Placement Groups (PGs) and piece it back together — a process that is highly technical, extremely time-consuming, and often very costly. Unless the lost data is exceptionally valuable *and* you or your organization have deep pockets, this route is usually impractical.
+
 ## Setup and Usage
 ### Scripts
 You will need two scripts:
