@@ -273,7 +273,7 @@ ceph osd set-full-ratio 0.85         # Stop all writes at 85%
 
 ## Final Thoughts
 Ceph is a very resiliant filesystem! And even when ish hits the fan, we have a lot of options to get back up and running.
-Good luck, I hope this helps if you are also facing disaster recovery situations with Ceph on Proxmox as I have! I have done my best.
+Good luck, I hope this helps if you are also facing disaster recovery situations with Ceph on Proxmox as I have!
 
 ## Disclaimer
 > The scripts and guidance provided here ("Software") are offered as-is, without any warranties, express or implied. Use at your own risk.
