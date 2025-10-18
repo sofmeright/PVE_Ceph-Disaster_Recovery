@@ -192,8 +192,6 @@ sudo chown ceph:ceph /var/lib/ceph/bluestore-rescue/db-osd0.img
 sudo ceph-objectstore-tool --data-path /var/lib/ceph/osd/ceph-1 --op list-pgs
 ```
 
-![d4350e5312b4571dd62ea86c6b5fa10e.png](:/8e07db78d91e4ce79a55da1cb8ab5eb5)
-
 ### Make a backup of a PG, probs best one you are more willing to "risk" losing
 ```bash
 sudo ceph-objectstore-tool --data-path /var/lib/ceph/osd/ceph-0 \
