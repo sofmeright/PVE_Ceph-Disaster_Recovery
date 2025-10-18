@@ -7,7 +7,11 @@ There are two Guides contained in this ReadMe currently.
 1. Instructions on recovering from loss of monitore stores (mommap[s])
 2. Guidance on recovering from backfillfull, OSDs beyond capacity that I/O or them remaining online is possible.
 
-This is a refactored and improved script-based process to recover Ceph monitor stores (monstore) from OSDs when your cluster has lost all monitors. This procedure helps restore your monitor quorum and cluster health without full data loss.
+---
+
+## Recovering from loss of monmaps:
+
+Contained in this repo alongside this ReadMe is a scripted process you can use to recover Ceph monitor stores (monstore) from OSDs when your cluster has lost all monitors. This procedure helps restore your monitor quorum and cluster health without full data loss.
 > These scripts are adaptations of existing recovery methods found in Proxmox forums, IBM, and Red Hat Ceph documentation.
 - This is not a magic wand or a simple fix. 
 - Recovering a Ceph cluster after total monitor loss is challenging and requires careful planning. 
