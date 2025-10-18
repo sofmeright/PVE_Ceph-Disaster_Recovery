@@ -256,14 +256,18 @@ sudo systemctl start ceph-osd@0
 | ceph osd unset noout        |
 
 ### Reset the full ratios back to normal # THIS IS CRUCIAL OR THAT IS NEEDED ^^^
+```bash
 ceph osd set-full-ratio 0.95
 ceph osd set-backfillfull-ratio 0.90
 ceph osd set-nearfull-ratio 0.85
+```
 
 ### Also you can set more conservative full ratios to stop writes earlier
+```bash
 ceph osd set-nearfull-ratio 0.75    # Warning at 75%
 ceph osd set-backfillfull-ratio 0.80 # Stop backfill at 80%
 ceph osd set-full-ratio 0.85         # Stop all writes at 85%
+```
 
 ---
 
