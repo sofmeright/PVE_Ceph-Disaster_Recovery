@@ -173,6 +173,7 @@ ceph osd pool set <pool-name> target_max_bytes 1  # Effectively stops writes to 
 ## If your disk is REALLY 100% FULL:
 
 ### Temporarily relocate the BlueStore Database to a disk with sufficient free space
+> Be aware there is a bug with restoring a DB to the block device, you might ensure your ceph version has the patch https://tracker.ceph.com/issues/40434
 ```bash
 # Prepare a file to be used as the temp db:
 sudo mkdir -p /var/lib/ceph/bluestore-rescue
